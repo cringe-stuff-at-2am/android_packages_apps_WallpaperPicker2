@@ -27,7 +27,6 @@ import android.view.LayoutInflater
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewGroup.MarginLayoutParams
 import android.view.ViewStub
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -311,19 +310,25 @@ class CustomizationPickerFragment :
 
         // Listen to the window's bottom nav bar height and the top status bar height and update the
         // layout padding accordingly.
+        val toolbarPaddingTop = toolbarContainer.paddingTop
         ViewCompat.setOnApplyWindowInsetsListener(pickerMotionContainer) { _, windowInsets ->
             val insets: Insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             val isVisible = windowInsets.isVisible(WindowInsetsCompat.Type.navigationBars())
+            // Unlike the nav bar insets below, the status bar padding must apply on every pass.
+            toolbarContainer.setPaddingRelative(
+                toolbarContainer.paddingStart,
+                toolbarPaddingTop + insets.top,
+                toolbarContainer.paddingEnd,
+                toolbarContainer.paddingBottom,
+            )
             if (!(insets.bottom == 0 && isVisible)) {
                 // We should do nothing in the case of "bottom inset 0 with nav bar visible".
                 // The event usually happens when the system dispatches an initial pass to reset the
                 // layout or prepare for the new orientation. This event is usually followed up
                 // with another insets update where the bottom inset is no longer 0.
                 applySystemBarInsets(
-                    toolbarContainer = toolbarContainer,
                     optionContainer = optionContainer,
                     customizationFloatingSheetContainer = customizationFloatingSheetContainer,
-                    statusBarHeight = insets.top,
                     navBarHeight = insets.bottom,
                 )
 
@@ -557,14 +562,10 @@ class CustomizationPickerFragment :
     }
 
     private fun applySystemBarInsets(
-        toolbarContainer: LinearLayout,
         optionContainer: ConstraintLayout,
         customizationFloatingSheetContainer: FrameLayout,
-        statusBarHeight: Int,
         navBarHeight: Int,
     ) {
-        (toolbarContainer.layoutParams as MarginLayoutParams).setMargins(0, statusBarHeight, 0, 0)
-
         val horizontalPadding =
             resources.getDimensionPixelSize(
                 R.dimen.customization_option_container_horizontal_padding
